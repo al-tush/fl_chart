@@ -190,64 +190,43 @@ class PieChartPainter extends BaseChartPainter<PieChartData> {
       radius: centerRadius,
     );
 
-    final startRadians = Utils().radians(tempAngle);
-    final sweepRadians = Utils().radians(sectionDegree);
-    final endRadians = startRadians + sweepRadians;
-
-    final startLineDirection =
-        Offset(math.cos(startRadians), math.sin(startRadians));
-
-    final startLineFrom = center + startLineDirection * centerRadius;
-    final startLineTo = startLineFrom + startLineDirection * section.radius;
-    final startLine = Line(startLineFrom, startLineTo);
-
-    final endLineDirection = Offset(math.cos(endRadians), math.sin(endRadians));
-
-    final endLineFrom = center + endLineDirection * centerRadius;
-    final endLineTo = endLineFrom + endLineDirection * section.radius;
-    final endLine = Line(endLineFrom, endLineTo);
-
-    var sectionPath = Path()
-      ..moveTo(startLine.from.dx, startLine.from.dy)
-      ..lineTo(startLine.to.dx, startLine.to.dy)
-      ..arcTo(sectionRadiusRect, startRadians, sweepRadians, false)
-      ..lineTo(endLine.from.dx, endLine.from.dy)
-      ..arcTo(centerRadiusRect, endRadians, -sweepRadians, false)
-      ..moveTo(startLine.from.dx, startLine.from.dy)
-      ..close();
-
-    /// Subtract section space from the sectionPath
-    if (sectionSpace != 0) {
-      final startLineSeparatorPath = createRectPathAroundLine(
-        Line(startLineFrom, startLineTo),
-        sectionSpace,
-      );
-      try {
-        sectionPath = Path.combine(
-          PathOperation.difference,
-          sectionPath,
-          startLineSeparatorPath,
-        );
-      } catch (e) {
-        /// It's a flutter engine issue with [Path.combine] in web-html renderer
-        /// https://github.com/imaNNeo/fl_chart/issues/955
-      }
-
-      final endLineSeparatorPath =
-          createRectPathAroundLine(Line(endLineFrom, endLineTo), sectionSpace);
-      try {
-        sectionPath = Path.combine(
-          PathOperation.difference,
-          sectionPath,
-          endLineSeparatorPath,
-        );
-      } catch (e) {
-        /// It's a flutter engine issue with [Path.combine] in web-html renderer
-        /// https://github.com/imaNNeo/fl_chart/issues/955
-      }
+    double pxToRadians(double length, double radiusOffs) {
+      return length / (centerRadius + radiusOffs);
     }
 
-    return sectionPath;
+    final startRadians = Utils().radians(tempAngle) + pxToRadians(sectionSpace / 2, section.radius / 2);
+    final sweepRadians = Utils().radians(sectionDegree) - pxToRadians(sectionSpace / 2, section.radius / 2);
+    final endRadians = startRadians + sweepRadians;
+
+    Offset calcPos(double radians, double radiusOffs) {
+      final lineDirection = Offset(math.cos(radians), math.sin(radians));
+      return center + lineDirection * (centerRadius + radiusOffs);
+    }
+
+    final round = section.radius / 4; // ToDo: add customization
+
+    return Path()
+      ..moveToOf(calcPos(startRadians, round))
+      ..lineToOf(calcPos(startRadians, section.radius - round))
+      ..arcTo(
+          Rect.fromCircle(center: calcPos(startRadians + pxToRadians(round, section.radius - round), section.radius - round), radius: round),
+          startRadians - math.pi/2, math.pi / 2, false)
+      ..arcTo(sectionRadiusRect,
+          startRadians + pxToRadians(round, section.radius),
+          sweepRadians - 2*pxToRadians(round, section.radius), false)
+      ..arcTo(
+          Rect.fromCircle(center: calcPos(endRadians - pxToRadians(round, section.radius - round), section.radius - round), radius: round),
+          endRadians, math.pi / 2, false)
+      ..lineToOf(calcPos(endRadians, round))
+      ..arcTo(
+          Rect.fromCircle(center: calcPos(endRadians - pxToRadians(round, round), round), radius: round),
+          endRadians + math.pi / 2, math.pi / 2, false)
+      ..arcTo(centerRadiusRect, endRadians - pxToRadians(round, 0), -sweepRadians + 2*pxToRadians(round, 0), false)
+      ..arcTo(
+          Rect.fromCircle(center: calcPos(startRadians + pxToRadians(round, round), round), radius: round),
+          startRadians + math.pi, math.pi / 2, false)
+      ..lineToOf(calcPos(startRadians, round))
+      ..close();
   }
 
   /// Creates a rect around a narrow line
@@ -523,4 +502,9 @@ class PieChartPainter extends BaseChartPainter<PieChartData> {
 
     return badgeWidgetsOffsets;
   }
+}
+
+extension DSPath on Path {
+  moveToOf(Offset offset) => moveTo(offset.dx, offset.dy);
+  lineToOf(Offset offset) => lineTo(offset.dx, offset.dy);
 }
