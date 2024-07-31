@@ -152,6 +152,7 @@ class PieChartSectionData {
     Color? color,
     this.gradient,
     double? radius,
+    this.roundPercent = 0,
     bool? showTitle,
     this.titleStyle,
     String? title,
@@ -184,6 +185,9 @@ class PieChartSectionData {
 
   /// Defines the radius of section.
   final double radius;
+
+  /// Defines the round radius percent of section.
+  final double roundPercent;
 
   /// Defines show or hide the title of section.
   final bool showTitle;
@@ -224,6 +228,7 @@ class PieChartSectionData {
     Color? color,
     Gradient? gradient,
     double? radius,
+    double? roundPercent,
     bool? showTitle,
     TextStyle? titleStyle,
     String? title,
@@ -237,6 +242,7 @@ class PieChartSectionData {
       color: color ?? this.color,
       gradient: gradient ?? this.gradient,
       radius: radius ?? this.radius,
+      roundPercent: roundPercent ?? this.roundPercent,
       showTitle: showTitle ?? this.showTitle,
       titleStyle: titleStyle ?? this.titleStyle,
       title: title ?? this.title,

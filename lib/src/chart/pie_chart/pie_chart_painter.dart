@@ -191,11 +191,14 @@ class PieChartPainter extends BaseChartPainter<PieChartData> {
     );
 
     double pxToRadians(double length, double radiusOffs) {
+      if (centerRadius + radiusOffs == 0) return 0;
       return length / (centerRadius + radiusOffs);
     }
 
-    final startRadians = Utils().radians(tempAngle) + pxToRadians(sectionSpace / 2, section.radius / 2);
-    final sweepRadians = Utils().radians(sectionDegree) - pxToRadians(sectionSpace / 2, section.radius / 2);
+    final roundPart = section.roundPercent / 100;
+
+    final startRadians = Utils().radians(tempAngle) + pxToRadians(sectionSpace * 2 * roundPart, section.radius * 2 * roundPart);
+    final sweepRadians = Utils().radians(sectionDegree) - pxToRadians(sectionSpace * 2 * roundPart, section.radius * 2 * roundPart);
     final endRadians = startRadians + sweepRadians;
 
     Offset calcPos(double radians, double radiusOffs) {
@@ -203,28 +206,33 @@ class PieChartPainter extends BaseChartPainter<PieChartData> {
       return center + lineDirection * (centerRadius + radiusOffs);
     }
 
-    final round = section.radius / 4; // ToDo: add customization
+    final round = section.radius * roundPart;
 
     return Path()
       ..moveToOf(calcPos(startRadians, round))
       ..lineToOf(calcPos(startRadians, section.radius - round))
       ..arcTo(
           Rect.fromCircle(center: calcPos(startRadians + pxToRadians(round, section.radius - round), section.radius - round), radius: round),
-          startRadians - math.pi/2, math.pi / 2, false)
+          startRadians - math.pi/2, math.pi / 2, false,
+      )
       ..arcTo(sectionRadiusRect,
           startRadians + pxToRadians(round, section.radius),
-          sweepRadians - 2*pxToRadians(round, section.radius), false)
+          sweepRadians - 2*pxToRadians(round, section.radius), false,
+      )
       ..arcTo(
           Rect.fromCircle(center: calcPos(endRadians - pxToRadians(round, section.radius - round), section.radius - round), radius: round),
-          endRadians, math.pi / 2, false)
+          endRadians, math.pi / 2, false,
+      )
       ..lineToOf(calcPos(endRadians, round))
       ..arcTo(
           Rect.fromCircle(center: calcPos(endRadians - pxToRadians(round, round), round), radius: round),
-          endRadians + math.pi / 2, math.pi / 2, false)
+          endRadians + math.pi / 2, math.pi / 2, false,
+      )
       ..arcTo(centerRadiusRect, endRadians - pxToRadians(round, 0), -sweepRadians + 2*pxToRadians(round, 0), false)
       ..arcTo(
           Rect.fromCircle(center: calcPos(startRadians + pxToRadians(round, round), round), radius: round),
-          startRadians + math.pi, math.pi / 2, false)
+          startRadians + math.pi, math.pi / 2, false,
+      )
       ..lineToOf(calcPos(startRadians, round))
       ..close();
   }
@@ -505,6 +513,6 @@ class PieChartPainter extends BaseChartPainter<PieChartData> {
 }
 
 extension DSPath on Path {
-  moveToOf(Offset offset) => moveTo(offset.dx, offset.dy);
-  lineToOf(Offset offset) => lineTo(offset.dx, offset.dy);
+  void moveToOf(Offset offset) => moveTo(offset.dx, offset.dy);
+  void lineToOf(Offset offset) => lineTo(offset.dx, offset.dy);
 }
